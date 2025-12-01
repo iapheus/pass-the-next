@@ -1,0 +1,38 @@
+{
+	"rateLimit": {
+		"success": false,
+		"error": "Rate limited, please slow down!"
+	},
+	"blocked": {
+		"success": false,
+		"error": "You are blocked!"
+	},
+	"methodNotAllowed": {
+		"success": false,
+		"error": "Method not allowed!"
+	},
+	"contentLength": {
+		"success": false,
+		"error": "Invalid content-length!"
+	},
+	"dynamicBlocker": {
+		"success": false,
+		"error": "Blocked for forbidden header!"
+	},
+	"xssDetected": {
+		"success": false,
+		"error": "Potential XSS detected!"
+	},
+	"sqliDetected": {
+		"success": false,
+		"error": "Potential SQL Injection detected!"
+	},
+	"pathTraversalDetected": {
+		"success": false,
+		"error": "Potential Path Traversal detected!"
+	},
+	"fuzzerDetected": {
+		"success": false,
+		"error": "Potential Fuzzer detected!"
+	}
+}
