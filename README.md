@@ -4,78 +4,113 @@ PassTheNext is a security middleware built with TypeScript for ExpressJS.
 
 # Features
 
-- Tracking and filtering incoming requests
+- Tracking, filtering and blocking incoming requests
+  	- Based on commonly used HTTP Headers and IP Address
 - Live request monitoring using WebSocket
-- JSON and MongoDB logging options
+- MongoDB, PostgreSQL and JSON logging options
 - Rate limiting based on API Token and IP Address
+  - Sliding and Fixed Rate limiting options
+- XSS, SQL Injection and Path Traversal Detection
+  - Searches in the request body, headers and url
+- Fuzzer detection with specific HTTP status codes
+- Customizable both log and error messages
 - General and per-route configuration options
 
 # Future Plans
 
 | Feature / Task                                               | Status         |
 |--------------------------------------------------------------|----------------|
-| Custom error messages for blocked users                      | In Progress   |
-| Custom log messages instead of raw data                       | In Progress	 |
-| SQLi and Reflected XSS detection                             | Not Started 	 |
+| Custom error messages for blocked users                      | [Done (v2)](https://github.com/iapheus/pass-the-next) |
+| Custom log messages instead of raw data                       | [Done (v2)](https://github.com/iapheus/pass-the-next)	 |
+| SQLi and Reflected XSS detection                             | [Done (v2)](https://github.com/iapheus/pass-the-next) 	 |
+| Detailed documentation                        | In Progress	 |
+| UI for log tracking and customization                        | In Progress	 |
 ---
 
 ## How to use in your APIs?
 
-After installing PassTheNext, you need to configure it. You can do this from anywhere in your application, but we recommend placing the configuration in your ```index``` file where the server starts. If you prefer a global setup over route-specific usage—you can actually use both—you can start using it this way. Based on your configuration, the middleware can log, block, or simply wait. If you want to set route-specific configurations, for example:
+After the configuration process, you can use it just like any other middleware.
 
-- For ```GET /product/1```, you can set the rateLimit to allow 25 requests per user every 60 seconds.
-- For ```POST /user/```, you might allow only 1 request per IP every 60 seconds.
-
-We wouldn’t want malicious users creating hundreds of accounts per second, right?
+### 1 – Application-wide
 
 ```
-// This is a global setting. If you don’t define specific rules for your endpoints, for example, the rate limit will be set to 5 requests per 60 seconds for all of them.
-
-generalConfig({
-	socketOptions: { socket: true, socketPort: 9009 },
-	logOptions: { log: true, logMode: ['realtime', 'mongodb'] },
-	mongodb: {
-		connString: process.env.MONGODB_URL,
-		dbName: process.env.MONGODB_NAME,
-	},
-	rateLimit: { maxRequest: 5, timeFrame: 60000 },
-});
+app.use(xssDetector());
 ```
-```
-// Overrides the global setting and limits this specific endpoint to 1 request per 60 seconds.
-
-app.get('/fetchBulkData', rateLimiter({maxRequest:1, timeFrame:60000}), (req, res) => {
-	res.status(200).json({ success: true, data });
-});
-```
-## What configurations can I make with this middleware?
-
-PassTheNext has two configuration functions (for now). One is ```generalConfig```, which sets default values and controls middleware features across the API. The other is ```setRequestConfig```, which lets you define general settings for incoming requests. It takes the following values:
 
 ```
-interface generalConfigOptions {
-	socketOptions: { socket: boolean; socketPort: number };
-	logOptions: { log: boolean; logMode: Array<'json' | 'mongodb' | 'realtime'> };
-	mongodb?: { connString: string; dbName: string };
-	rateLimit?: RateLimiterOptions;
-}
+app.use(xssDetector({options:{scanFor:['query']}}));
 ```
-❗The Rate Limiter is not a separate function❗ You use it as a value inside the general config function but you can define it as its own object and pass it in as an argument.
+
+### 2- Route specific
+
 ```
-interface RateLimiterOptions {
-	timeFrame?: number;
-	maxRequest?: number;
-	isToken?: boolean;
-}
+app.get('/products', xssDetector(), (req,res) => {return res.status(200)})
 ```
+
 ```
-interface requestOptions {
-  details: [];
-  filters: Record<string, any>;
-  actions: [];
-}
+app.get('/products', xssDetector({options:{scanFor:['query']}}), (req,res) => {return res.status(200)})
 ```
+
+### 3- Hybrid
+
+While only the ‘query’ will be scanned in the rest of the application, only the headers will be scanned at the ‘/products’ endpoint.
+
+```
+app.use(xssDetector({options:{scanFor:['query']}}));
+```
+
+```
+app.get('/products', xssDetector({options:{scanFor:['headers']}}), (req,res) => {return res.status(200)})
+```
+
+[Check out this example.](https://github.com/iapheus/pass-the-next/blob/main/proxy-gateway/server.ts)
+
 For now, these are the available options. Set it once and forget it.
 
-# License
+## How to configure a feature?
+
+After installing PassTheNext, you need to configure it. You can do this from anywhere in your application, but we recommend placing the configuration in your ```index``` file where the server starts. Each feature has 3 different ways to define settings.
+
+### 1 - Default settings
+These are the settings that come by default when the middleware runs. If you do not override them using the methods below, these settings will apply either throughout your entire application when using app.use(), or only for the specific endpoint if you apply them on an endpoint basis.
+
+```app.use(fixedRateLimiter())```
+
+### 2 - Overriding default settings globally in the application
+
+Schema and default settings for Fixed Rate Limiter
+```
+export interface IFixedRateLimiterOptions {
+	timeFrameSeconds: number;
+	maxRequest: number;
+	retryAfterSeconds: number;
+}
+
+let RateLimitOptions: IFixedRateLimiterOptions = {
+	timeFrameSeconds: 60,
+	maxRequest: 100,
+	retryAfterSeconds: 60,
+};
+```
+Override function — this function starts with the name of each feature.
+```
+setFixedRateLimiterOptions({timeFrameSeconds:120, maxRequest:50})
+```
+You do not have to provide a full schema to this function; it also accepts partial input. In the example above, we only overrode “timeFrameSeconds” and “maxRequest”, which means that the “retryAfterSeconds” value will remain as the default.
+
+### 3 – Overriding settings specifically for an endpoint
+
+``` app.get('/products',fixedRateLimiter({maxRequest:25}), (req,res) => { return res.status(200) }); ```
+
+In this way, you only override for that specific endpoint. It will not affect the rest of the application.
+
+# License and Attribution
+This project uses;
+- [Typescript](https://www.npmjs.com/package/typescript)
+- [Express](https://www.npmjs.com/package/express)
+- [Mongoose](https://www.npmjs.com/package/mongoose)
+- [Node-Postgres](https://www.npmjs.com/package/pg)
+- [WS](https://www.npmjs.com/package/ws)
+- [Dotenv](https://www.npmjs.com/package/dotenv)
+
 [GNU AGPLv3](https://choosealicense.com/licenses/agpl-3.0/)
