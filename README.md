@@ -1,9 +1,10 @@
 # PassTheNext - Smart & Secure Request Management
 
-PassTheNext is a security middleware built with TypeScript for ExpressJS.
+PassTheNext is a security solution that works as middleware or as a WAF with a proxy gateway. It's built with TypeScript and ExpressJS.
 
 # Features
 
+- Can be used as middleware or WAF
 - Tracking, filtering and blocking incoming requests
   	- Based on commonly used HTTP Headers and IP Address
 - Live request monitoring using WebSocket
@@ -27,7 +28,30 @@ PassTheNext is a security middleware built with TypeScript for ExpressJS.
 | UI for log tracking and customization                        | In Progress	 |
 ---
 
-## How to use in your APIs?
+## WAF Mode
+PassTheNext has the ability to run in WAF (Web Application Firewall) mode. With this feature, you can protect your applications more efficiently compared to middleware usage. In this mode, PassTheNext acts as a proxy gateway, inspecting, filtering, and blocking user requests before they reach your backend. This prevents unnecessary load on the backend servers where your critical services run.
+
+### Features
+
+- Free from ExpressJS dependency, you can use it with any programming language or framework.
+
+	- After running on a NodeJS supported server, you can develop applications in any framework or language at the redirected address.
+
+- The backend address where you perform critical operations remain hidden. Clients will only see the proxy address.
+
+- Requests that are blocked will never reach your backend, preventing unnecessary traffic and avoiding performance loss.
+
+### Request Flow: WAF & Middleware
+<p align="center">
+  <img src="https://raw.githubusercontent.com/iapheus/pass-the-next/refs/heads/main/examples/images/proxy.png" height="150" style="display:inline-block;"/>
+  <img src="https://raw.githubusercontent.com/iapheus/pass-the-next/refs/heads/main/examples/images/middleware.png" height="150" style="display:inline-block;"/>
+</p>
+
+### Using as a WAF
+
+- [Check out this example](https://github.com/iapheus/pass-the-next/blob/main/examples/proxy-gateway/server.ts)
+
+## Using as Middleware
 
 After the configuration process, you can use it just like any other middleware.
 
@@ -63,11 +87,11 @@ app.use(xssDetector({options:{scanFor:['query']}}));
 app.get('/products', xssDetector({options:{scanFor:['headers']}}), (req,res) => {return res.status(200)})
 ```
 
-[Check out this example.](https://github.com/iapheus/pass-the-next/blob/main/proxy-gateway/server.ts)
+[Check out this example.](https://github.com/iapheus/pass-the-next/blob/main/examples/middleware/server.ts)
 
 For now, these are the available options. Set it once and forget it.
 
-## How to configure a feature?
+## Feature Configuration
 
 After installing PassTheNext, you need to configure it. You can do this from anywhere in your application, but we recommend placing the configuration in your ```index``` file where the server starts. Each feature has 3 different ways to define settings.
 
@@ -110,6 +134,7 @@ This project uses;
 - [Express](https://www.npmjs.com/package/express)
 - [Mongoose](https://www.npmjs.com/package/mongoose)
 - [Node-Postgres](https://www.npmjs.com/package/pg)
+- [http-proxy-middleware](https://www.npmjs.com/package/http-proxy-middleware)
 - [WS](https://www.npmjs.com/package/ws)
 - [Dotenv](https://www.npmjs.com/package/dotenv)
 
